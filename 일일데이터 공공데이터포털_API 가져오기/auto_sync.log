@@ -1,0 +1,13 @@
+2026-03-31 09:19:53,493 [INFO] ==========================================
+2026-03-31 09:19:53,493 [INFO] 매일 자동 동기화 시작: 2026-03-31 09:19:53
+2026-03-31 09:19:53,493 [INFO] 1단계: 데이터 추출 엔진 가동 (daily_fetch.py)...
+2026-03-31 09:20:52,337 [INFO] 성공: python3... 완료
+2026-03-31 09:20:52,339 [INFO] 2단계: 깃허브 자동 커밋 및 푸시...
+2026-03-31 09:20:52,369 [ERROR] 실패: git add .
+Error: fatal: not a git repository (or any of the parent directories): .git
+
+2026-03-31 09:20:52,383 [ERROR] 실패: git commit -m "Auto-Update: Daily License Data (2026-03-31)"
+Error: fatal: not a git repository (or any of the parent directories): .git
+
+2026-03-31 09:20:52,384 [INFO] ℹ️ 변경된 데이터가 없어 커밋을 스킵합니다.
+2026-03-31 09:20:52,384 [INFO] 4단계: 결과 리포트 이메일 전송 시도...

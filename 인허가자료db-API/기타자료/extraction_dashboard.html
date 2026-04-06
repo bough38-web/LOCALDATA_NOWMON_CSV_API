@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인허가 데이터 추출 컨트롤 센터 | Control Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            background-image: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        /* Dashboard Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 30px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card p {
+            color: var(--text-dim);
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            display: inline-block;
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        /* Mode Section */
+        .mode-selection {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            padding: 15px;
+            border-radius: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .mode-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        /* Process Steps */
+        .process-flow {
+            margin-top: 60px;
+            background: var(--card-bg);
+            border-radius: 30px;
+            padding: 40px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .steps {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-top: 40px;
+        }
+
+        .steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 50px;
+            right: 50px;
+            height: 2px;
+            background: rgba(255,255,255,0.05);
+            z-index: 1;
+        }
+
+        .step {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            width: 140px;
+        }
+
+        .step-icon {
+            width: 44px;
+            height: 44px;
+            background: #1e293b;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-weight: 800;
+            color: var(--primary);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+        }
+
+        .step-label {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        /* Region Banner */
+        .region-banner {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 100px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .region-item {
+            font-weight: 600;
+            color: #a5b4fc;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .btn-run {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: 0.3s;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .btn-run:hover {
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.6);
+            transform: scale(1.02);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <span class="version-badge">Advanced v4.2</span>
+        <h1>EXTRACTION CENTER</h1>
+        <p style="color: var(--text-dim)">서울, 경기, 강원 인허가 공공데이터 정밀 수집 대시보드 컨트롤 시스템</p>
+    </header>
+
+    <div class="grid">
+        <!-- Status Card -->
+        <div class="card">
+            <h2><span class="status-dot"></span> 서비스 상태</h2>
+            <p>공공데이터포털(Data.go.kr) API 연결 상태 <b>정상</b>. 지자체 코드 매핑 및 주소 필터링 엔진이 가동 중입니다.</p>
+            <div style="margin-top: 10px; font-size: 0.9rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>타겟 지역</span>
+                    <span style="color: white">서울, 경기, 강원</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>인코딩 설정</span>
+                    <span style="color: white">CP949 (Excel 호환)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>수집 딜레이</span>
+                    <span style="color: white">0.1s (Stability Mode)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode Insight -->
+        <div class="card">
+            <h2>수집 모드 인사이트</h2>
+            <div class="mode-selection">
+                <div class="mode-btn active">
+                    <div style="font-weight: 800; font-size: 1.1rem;">DAILY</div>
+                    <div style="font-size: 0.8rem; margin-top: 5px;">일일 변동 (D-3)</div>
+                </div>
+                <div class="mode-btn">
+                    <div style="font-weight: 800; font-size: 1.1rem;">FULL</div>
+                    <div style="font-size: 0.8rem; margin-top: 5px;">전수 조사 (2026)</div>
+                </div>
+            </div>
+            <p style="margin-top: 20px; font-size: 0.95rem;">
+                <b>DAILY</b>: 오늘이 19일이면 16일의 변동분을 타겟팅합니다.<br/>
+                <b>FULL</b>: 2026년에 수정된 모든 시설 데이터를 정밀 조사합니다.
+            </p>
+        </div>
+    </div>
+
+    <div class="process-flow">
+        <h2 style="text-align: center; letter-spacing: 2px;">AUTOMATED WORKFLOW</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-icon">1</div>
+                <div class="step-label">Sheet/Excel<br/>로드</div>
+            </div>
+            <div class="step">
+                <div class="step-icon">2</div>
+                <div class="step-label">D-3 날짜<br/>자동 계산</div>
+            </div>
+            <div class="step">
+                <div class="step-icon">3</div>
+                <div class="step-label">API 호출<br/>(195종 서비스)</div>
+            </div>
+            <div class="step">
+                <div class="step-icon">4</div>
+                <div class="step-label">서울/경기/강원<br/>주소 필터링</div>
+            </div>
+            <div class="step">
+                <div class="step-icon">5</div>
+                <div class="step-label">신규/폐업 통합<br/>압축 저장</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="region-banner">
+        <div class="region-item">📍 서울특별시</div>
+        <div class="region-item">📍 경기도</div>
+        <div class="region-item">📍 강원특별자치도</div>
+    </div>
+
+    <a href="#" class="btn-run" onclick="alert('터미널에서 python3 인허가자료추출_API.py 를 실행하세요.')">수집 엔진 가동 (CLI 가이드)</a>
+
+    <footer>
+        &copy; 2026 인허가 데이터 자동화 시스템. Powered by Antigravity AI Engine.
+    </footer>
+</div>
+
+</body>
+</html>

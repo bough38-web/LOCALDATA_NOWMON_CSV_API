@@ -1,0 +1,45 @@
+name: Daily Data Sync
+
+on:
+  schedule:
+    # 매일 한국 시간(KST) 새벽 2시 실행 (UTC 기준 17시)
+    - cron: '0 17 * * *'
+  workflow_dispatch: # 수동 실행을 위한 트리거
+
+jobs:
+  fetch-and-sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 자신 레포지토리에 푸쉬할 권한 부여
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r "일일데이터 공공데이터포털_API 가져오기/requirements.txt"
+
+      - name: Run Data Collection
+        env:
+          SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
+        run: |
+          python "일일데이터 공공데이터포털_API 가져오기/daily_fetch.py" --mode DAILY
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          # 변동된 사항 스테이징
+          git add data/ summary.txt "일일데이터 공공데이터포털_API 가져오기/api_extraction.log" || true
+          
+          # 변경사항이 없을 경우 commit에서 실패하지 않도록 처리
+          git commit -m "data: [AUTO] Daily Public Data Sync $(date +'%Y-%m-%d')" || echo "No changes to commit"
+          
+          # 메인 브랜치로 푸시 (권한은 permissions에서 부여됨)
+          git push origin HEAD:main
