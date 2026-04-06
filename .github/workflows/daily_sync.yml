@@ -28,6 +28,9 @@ jobs:
       - name: Run Data Collection
         env:
           SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
         run: |
           python "일일데이터 공공데이터포털_API 가져오기/daily_fetch.py" --mode DAILY
 
