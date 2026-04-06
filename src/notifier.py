@@ -93,8 +93,12 @@ class EmailNotifier:
                 # Clean up password layout (remove spaces and dashes)
                 clean_password = self.app_password.replace("-", "").replace(" ", "")
                 server.login(self.sender_email, clean_password)
-                server.sendmail(self.sender_email, self.receiver_email, msg.as_string())
-            print("✅ Email report sent successfully.")
+                
+                # 다중 수신자 처리 (콤마로 구분된 경우 리스트로 변환)
+                receivers_list = [email.strip() for email in self.receiver_email.split(',')]
+                
+                server.sendmail(self.sender_email, receivers_list, msg.as_string())
+            print(f"✅ Email report sent successfully to: {receivers_list}")
             return True
         except Exception as e:
             print(f"❌ Failed to send email: {e}")
