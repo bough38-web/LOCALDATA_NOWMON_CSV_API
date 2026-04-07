@@ -66,6 +66,43 @@ def is_korean_workday(dt):
         return False
     return True
 
+# ==========================================
+# [NEW] 체크포인트 매니저 클래스
+# ==========================================
+class CheckpointManager:
+    def __init__(self, checkpoint_path):
+        self.path = Path(checkpoint_path)
+        self.data = self._load()
+
+    def _load(self):
+        if self.path.exists():
+            try:
+                with open(self.path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except:
+                return {}
+        return {}
+
+    def is_completed(self, date_str, service_id, local_code):
+        key = f"{date_str}:{service_id}:{local_code}"
+        return self.data.get(key) == "COMPLETED"
+
+    def mark_completed(self, date_str, service_id, local_code):
+        key = f"{date_str}:{service_id}:{local_code}"
+        self.data[key] = "COMPLETED"
+        self._save()
+
+    def _save(self):
+        with open(self.path, 'w', encoding='utf-8') as f:
+            json.dump(self.data, f, ensure_ascii=False, indent=2)
+
+    def clear(self):
+        if self.path.exists():
+            try:
+                self.path.unlink()
+            except: pass
+        self.data = {}
+
 def main():
     try:
         # ==========================================
@@ -76,6 +113,7 @@ def main():
         parser.add_argument('--date', type=str, default='', help='Base target date (YYYY-MM-DD)')
         parser.add_argument('--days', type=int, default=1, help='Number of previous days to collect')
         parser.add_argument('--workers', type=int, default=10, help='Number of parallel workers')
+        parser.add_argument('--force', action='store_true', help='Force collection regardless of workday check')
         args = parser.parse_args()
 
         MODE = args.mode 
@@ -88,17 +126,21 @@ def main():
         else:
             base_date = datetime.now() - timedelta(days=1)
 
-        # 수집할 날짜 리스트 생성 (평일/공휴일 제외 로직 적용)
+        # 수집할 날짜 리스트 생성 (평일/공휴일 제외 로직 적용, --force 시 무시)
         all_potential_dates = [base_date - timedelta(days=i) for i in range(DAYS_TO_FETCH)]
-        target_dates = [dt.strftime("%Y-%m-%d") for dt in all_potential_dates if is_korean_workday(dt)]
+        target_dates = []
+        for dt in all_potential_dates:
+            dt_str = dt.strftime("%Y-%m-%d")
+            if args.force or is_korean_workday(dt):
+                target_dates.append(dt_str)
+            else:
+                logger.info(f"📅 [{dt_str}] 주말/공휴일 수집 제외 (강제 수집 시 --force 사용)")
         
         if not target_dates:
-            logger.info(f"⏭️ 수집 대상 기간({DAYS_TO_FETCH}일분) 중 평일/작업일이 없어 수집을 건너뜁니다.")
-            with open(Path(__file__).resolve().parent.parent / "summary.txt", "w", encoding="utf-8") as fs:
-                fs.write(f"[{datetime.now().strftime('%Y-%m-%d')}] 오늘은 공휴일 또는 주말이므로 수집을 진행하지 않습니다.")
+            logger.info(f"⏭️ 수집 대상 기간({DAYS_TO_FETCH}일분) 중 수집 대상 날짜가 없어 종료합니다.")
             return
 
-        logger.info(f"📅 수집 대상 날짜 ({len(target_dates)}일분 - 평일만): {target_dates}")
+        logger.info(f"📅 수집 대상 날짜 ({len(target_dates)}일분, Force={args.force}): {target_dates}")
 
         retry_strategy = Retry(total=5, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
         adapter = HTTPAdapter(max_retries=retry_strategy)
@@ -113,7 +155,10 @@ def main():
         API_KEY_PATH = BASE_PATH / '오픈API' / 'api_key.txt'
         DATA_OUTPUT_PATH = BASE_PATH.parent / 'data'
         CONFIG_PATH = BASE_PATH.parent / 'src' / 'branch_config.json'
+        CHECKPOINT_PATH = BASE_PATH / 'checkpoint.json'
         DATA_OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+
+        cp_manager = CheckpointManager(CHECKPOINT_PATH)
 
         # Load Targeted Sigungu Codes from Config
         try:
@@ -218,6 +263,11 @@ def main():
                 if "apis.data.go.kr" not in api_url or not S_KEY: continue
                 
                 for l_code in TARGET_CODES:
+                    # [NEW] 체크포인트 확인
+                    if cp_manager.is_completed(t_date, svc_id, l_code):
+                        logger.info(f"⏭️ Skipping (Completed): {t_date} {svc_id} {l_code}")
+                        continue
+
                     df_daily = process_service_extraction(api_url, S_KEY, t_date, l_code)
                     if not df_daily.empty:
                         fname = f"{t_date.replace('-','')}_{l_code}_{svc_id[:20]}_{safe_oper[:20]}.csv"
@@ -226,6 +276,9 @@ def main():
                         all_collected_files.append(out_path)
                         cnt = len(df_daily); daily_count += cnt
                         total_records_all += cnt
+                    
+                    # [NEW] 성공 시 체크포인트 기록
+                    cp_manager.mark_completed(t_date, svc_id, l_code)
 
             summary_details += f"- {t_date}: {daily_count}건 발견\n"
             logger.info(f"🏁 [{t_date}] 수집 종료 (총 {daily_count}건)")
@@ -268,6 +321,9 @@ def main():
             except Exception as mail_e:
                 logger.warning(f"⚠️ 이메일 알림 발송 중 오류발생 (프로세스는 정상종료): {mail_e}")
 
+        # [NEW] 수집이 모두 정상적으로 끝났다면 체크포인트 삭제
+        cp_manager.clear()
+        
         logger.info("Done.")
 
     except Exception as e:

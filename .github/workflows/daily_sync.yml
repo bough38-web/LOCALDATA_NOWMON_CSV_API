@@ -4,7 +4,12 @@ on:
   schedule:
     # 매일 한국 시간(KST) 새벽 2시 실행 (UTC 기준 17시)
     - cron: '0 17 * * *'
-  workflow_dispatch: # 수동 실행을 위한 트리거
+  workflow_dispatch:
+    inputs:
+      manual_date:
+        description: '수집할 특정 날짜 (YYYY-MM-DD)'
+        required: false
+        default: ''
 
 jobs:
   fetch-and-sync:
@@ -32,17 +37,24 @@ jobs:
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
         run: |
-          python "일일데이터 공공데이터포털_API 가져오기/daily_fetch.py" --mode DAILY
+          if [ -z "${{ github.event.inputs.manual_date }}" ]; then
+            python "일일데이터 공공데이터포털_API 가져오기/daily_fetch.py" --mode DAILY
+          else
+            echo "🚀 [Manual Run] Target Date: ${{ github.event.inputs.manual_date }}"
+            python "일일데이터 공공데이터포털_API 가져오기/daily_fetch.py" --date "${{ github.event.inputs.manual_date }}" --days 1 --force
+          fi
 
-      - name: Commit and Push changes
+      - name: Commit and Push progress
+        if: always()
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          # 변동된 사항 스테이징
-          git add data/ summary.txt "일일데이터 공공데이터포털_API 가져오기/api_extraction.log" || true
           
-          # 변경사항이 없을 경우 commit에서 실패하지 않도록 처리
-          git commit -m "data: [AUTO] Daily Public Data Sync $(date +'%Y-%m-%d')" || echo "No changes to commit"
+          # 변동된 사항 및 체크포인트 스테이징
+          git add data/ summary.txt "일일데이터 공공데이터포털_API 가져오기/api_extraction.log" "일일데이터 공공데이터포털_API 가져오기/checkpoint.json" || true
           
-          # 메인 브랜치로 푸시 (권한은 permissions에서 부여됨)
+          # 변경사항이 있을 경우 커밋 (중단 시점 기록 포함)
+          git commit -m "data: [AUTO] Sync Progress/Update $(date +'%Y-%m-%d')" || echo "No changes to commit"
+          
+          # 메인 브랜치로 푸시
           git push origin HEAD:main
