@@ -124,7 +124,8 @@ def main():
         if args.date:
             base_date = datetime.strptime(args.date, "%Y-%m-%d")
         else:
-            base_date = datetime.now() - timedelta(days=1)
+            # 기본값: 오늘 기준 2일 전 (사용자 요청 반영: 마이너스 2일)
+            base_date = datetime.now() - timedelta(days=2)
 
         # 수집할 날짜 리스트 생성 (평일/공휴일 제외 로직 적용, --force 시 무시)
         all_potential_dates = [base_date - timedelta(days=i) for i in range(DAYS_TO_FETCH)]
