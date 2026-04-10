@@ -36,6 +36,9 @@ jobs:
           EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+          SENDER_EMAIL: ${{ secrets.EMAIL_SENDER }}
+          SENDER_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          RECEIVER_EMAIL: ${{ secrets.EMAIL_RECEIVER }}
         run: |
           if [ -z "${{ github.event.inputs.manual_date }}" ]; then
             python "일일데이터 공공데이터포털_API 가져오기/daily_fetch.py" --mode DAILY

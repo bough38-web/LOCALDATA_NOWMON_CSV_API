@@ -10,12 +10,10 @@ BASE_PATH = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE_PATH.parent
 sys.path.append(str(PROJECT_ROOT))
 
-# ==========================================
-# 자동화 설정 (Standalone Module 버전)
-# ==========================================
 # 스크립트 위치 기준 경로 설정
 BASE_PATH = Path(__file__).resolve().parent
-PROJECT_ROOT = BASE_PATH.parent
+PROJECT_ROOT = BASE_PATH.parent.resolve() # Ensure absolute path for git commands
+
 EXTRACTION_SCRIPT = BASE_PATH / "daily_fetch.py"
 LOG_FILE = BASE_PATH / "auto_sync.log"
 

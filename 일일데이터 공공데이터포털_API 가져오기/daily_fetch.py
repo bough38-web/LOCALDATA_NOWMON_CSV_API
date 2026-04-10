@@ -151,11 +151,19 @@ def main():
         SHEET_URL = f"https://docs.google.com/spreadsheets/d/1Y6n4OgetzmvJZBcq75oZRiriMWFSIh3L/gviz/tq?tqx=out:csv&sheet={sheet_name}"
 
         BASE_PATH = Path(__file__).resolve().parent
-        ETC_PATH = BASE_PATH / '기타자료'
-        API_KEY_PATH = BASE_PATH / '오픈API' / 'api_key.txt'
-        DATA_OUTPUT_PATH = BASE_PATH.parent / 'data'
-        CONFIG_PATH = BASE_PATH.parent / 'src' / 'branch_config.json'
+        PROJECT_ROOT = BASE_PATH.parent
+        
+        # Path logic: Look in PROJECT_ROOT for global assets
+        API_KEY_PATH = PROJECT_ROOT / '오픈API' / 'api_key.txt'
+        DATA_OUTPUT_PATH = PROJECT_ROOT / 'data'
+        CONFIG_PATH = PROJECT_ROOT / 'src' / 'branch_config.json'
+        # Checkpoint is local to the engine 
         CHECKPOINT_PATH = BASE_PATH / 'checkpoint.json'
+        
+        # Fallback for API_KEY if structure is different
+        if not API_KEY_PATH.exists():
+            API_KEY_PATH = BASE_PATH / '오픈API' / 'api_key.txt'
+
         DATA_OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
         cp_manager = CheckpointManager(CHECKPOINT_PATH)
@@ -241,6 +249,10 @@ def main():
         if TEMP_ROOT.exists(): shutil.rmtree(TEMP_ROOT)
         TEMP_ROOT.mkdir(parents=True, exist_ok=True)
 
+        # [NEW] Periodic progress email tracking
+        last_progress_email_time = time.time()
+        start_time_all = datetime.now()
+
         for t_date in target_dates:
             logger.info(f"🚀 [{t_date}] 데이터 수집 시작")
             date_dir = TEMP_ROOT / t_date.replace("-", "")
@@ -279,6 +291,25 @@ def main():
                     
                     # [NEW] 성공 시 체크포인트 기록
                     cp_manager.mark_completed(t_date, svc_id, l_code)
+
+                    # [NEW] Periodic progress report (every 30 minutes)
+                    if EmailNotifier and (time.time() - last_progress_email_time >= 1800):
+                        try:
+                            elapsed = datetime.now() - start_time_all
+                            progress_msg = f"""[진행 현황 보고]
+- 수집 시작: {start_time_all.strftime('%H:%M:%S')}
+- 경과 시간: {str(elapsed).split('.')[0]}
+- 현재까지 발견 건수: {total_records_all}건
+- 현재 작업 중인 날짜: {t_date}
+- 현재 작업 중인 서비스: {svc_id} ({safe_oper})
+- 현재까지 생성된 파일: {len(all_collected_files)}개
+"""
+                            notifier = EmailNotifier()
+                            notifier.send_progress_report(progress_msg)
+                            last_progress_email_time = time.time()
+                            logger.info("📡 30분 주기 중간 보고 메일 발송 완료")
+                        except Exception as e:
+                            logger.warning(f"⚠️ 중간 보고 메일 발송 실패: {e}")
 
             summary_details += f"- {t_date}: {daily_count}건 발견\n"
             logger.info(f"🏁 [{t_date}] 수집 종료 (총 {daily_count}건)")

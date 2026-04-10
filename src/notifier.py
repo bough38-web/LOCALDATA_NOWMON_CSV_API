@@ -9,10 +9,10 @@ class EmailNotifier:
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
         
-        # Load from environment variables first (recommended for security)
-        self.sender_email = os.environ.get("SENDER_EMAIL")
-        self.app_password = os.environ.get("SENDER_PASSWORD")
-        self.receiver_email = os.environ.get("RECEIVER_EMAIL")
+        # Load from environment variables (Support multiple name variants for platform compatibility)
+        self.sender_email = os.environ.get("SENDER_EMAIL") or os.environ.get("EMAIL_SENDER")
+        self.app_password = os.environ.get("SENDER_PASSWORD") or os.environ.get("EMAIL_PASSWORD")
+        self.receiver_email = os.environ.get("RECEIVER_EMAIL") or os.environ.get("EMAIL_RECEIVER")
         
         # Fallback for cron jobs / terminal execution: parse secrets.toml directly
         if not self.sender_email or not self.app_password:
@@ -102,6 +102,54 @@ class EmailNotifier:
             return True
         except Exception as e:
             print(f"❌ Failed to send email: {e}")
+            return False
+
+    def send_progress_report(self, summary_text):
+        """
+        Sends an intermediate progress report via email.
+        """
+        if not self.sender_email or not self.app_password:
+            return False
+
+        subject = f"⏳ [진행 현황 보고] API 데이터 수집중... - {datetime.now().strftime('%H:%M')}"
+        
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+            <div style="background-color: #6b7280; color: white; padding: 15px; border-radius: 8px 8px 0 0;">
+                <h3 style="margin: 0;">수집 진행 현황 실시간 보고</h3>
+            </div>
+            <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+                <p>알림 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                <p>현재 데이터 수집이 진행 중이며, 30분 단위 정기 진행 사항을 보고드립니다.</p>
+                
+                <div style="background-color: #f9fafb; padding: 15px; border-radius: 4px; border-left: 4px solid #6b7280; font-family: monospace;">
+                    <pre style="white-space: pre-wrap; font-size: 13px;">{summary_text}</pre>
+                </div>
+                
+                <p style="margin-top: 20px; font-size: 12px; color: #6b7280;">최종 완료 시 상세 리포트가 추가로 발송될 예정입니다.</p>
+            </div>
+        </body>
+        </html>
+        """
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = self.sender_email
+        msg["To"] = self.receiver_email
+        msg.attach(MIMEText(html_content, "html"))
+
+        try:
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                clean_password = self.app_password.replace("-", "").replace(" ", "")
+                server.login(self.sender_email, clean_password)
+                receivers_list = [email.strip() for email in self.receiver_email.split(',')]
+                server.sendmail(self.sender_email, receivers_list, msg.as_string())
+            print(f"📡 Progress report sent successfully to: {receivers_list}")
+            return True
+        except Exception as e:
+            print(f"❌ Failed to send progress report: {e}")
             return False
 
 if __name__ == "__main__":
