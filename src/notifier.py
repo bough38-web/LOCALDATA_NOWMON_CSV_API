@@ -121,7 +121,7 @@ class EmailNotifier:
             </div>
             <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
                 <p>알림 시각: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-                <p>현재 데이터 수집이 진행 중이며, 30분 단위 정기 진행 사항을 보고드립니다.</p>
+                <p>현재 데이터 수집이 진행 중이며, 8시간 단위 정기 진행 사항을 보고드립니다.</p>
                 
                 <div style="background-color: #f9fafb; padding: 15px; border-radius: 4px; border-left: 4px solid #6b7280; font-family: monospace;">
                     <pre style="white-space: pre-wrap; font-size: 13px;">{summary_text}</pre>
