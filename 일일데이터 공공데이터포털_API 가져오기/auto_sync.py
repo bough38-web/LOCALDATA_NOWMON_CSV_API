@@ -54,8 +54,8 @@ def main():
     logger.info(f"매일 자동 동기화 시작: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # 1. 데이터 추출 실행 (DAILY 모드 - 어제 데이터 수집)
-    logger.info("1단계: 데이터 추출 엔진 가동 (daily_fetch.py)...")
-    success, output = run_command(f'python3 "{EXTRACTION_SCRIPT}" --mode DAILY', cwd=PROJECT_ROOT)
+    logger.info("1단계: 데이터 추출 엔진 가동 (daily_fetch.py - 전국 단위 수집)...")
+    success, output = run_command(f'python3 "{EXTRACTION_SCRIPT}" --mode DAILY --all-regions', cwd=PROJECT_ROOT)
     
     if not success:
         logger.error("데이터 추출 중 오류가 발생하여 중단합니다.")

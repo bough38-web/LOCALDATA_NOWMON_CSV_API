@@ -1,1 +1,6 @@
+<<<<<<< Updated upstream
 [2026-04-05~2026-04-05] 기간 동안 신규 변동 데이터가 없습니다.
+=======
+자동화 실행 중 오류가 발생했습니다:
+Cannot save file into a non-existent directory: '/Users/heebonpark/Downloads/LOCALDATA모음/수집전용폴더_API/일일데이터 공공데이터포털_API 가져오기/TEMP_BATCH_WORK/20260408'
+>>>>>>> Stashed changes
